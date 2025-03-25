@@ -253,7 +253,6 @@ class MCTSParallel:
             expandable_self_play_games = [mapping_idx for mapping_idx in range(len(self_play_games)) if self_play_games[mapping_idx].node is not None]
 
             # truthy not empty list
-            # if buggy, try len(e_s_p_g) > 0:
             if expandable_self_play_games:
                 states = np.stack([self_play_games[mapping_idx].node.state for mapping_idx in expandable_self_play_games])
                 policy, value = self.model(
