@@ -5,7 +5,7 @@ from modules.net import ResNet
 from modules.games import ConnectFour
 from modules.alphazero import MCTS
 
-path_to_weights = ...
+path_to_weights = ""
 
 def play():
     game = ConnectFour()
@@ -22,7 +22,11 @@ def play():
 
     torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = ResNet(game, num_resBlocks=9, num_hidden=128, device=device)
+    model = ResNet(game, num_res_blocks=9, num_hidden=128, device=device)
+    if (not path_to_weights 
+    or path_to_weights == Ellipsis):
+        exit("Add the path to weights first")
+        
     model.load_state_dict(torch.load(path_to_weights, map_location=device))
     model.eval()
 
@@ -61,3 +65,6 @@ def play():
     
         player = game.get_opponent(player)
 
+
+if __name__ == "__main__":
+    play()
