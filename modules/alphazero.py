@@ -8,7 +8,6 @@ import numpy as np
 import torch
 
 
-
 class Node:
     def __init__(self, game, args, state, parent=None, action_taken=None, prior=0, visit_count=0):
         self.game = game
@@ -219,7 +218,6 @@ class MCTSParallel:
         policy = torch.softmax(policy, dim=1).cpu().numpy()
         policy = (1 - self.args['dirichlet_epsilon']) * policy + self.args['dirichlet_epsilon'] \
             * np.random.dirichlet([self.args['dirichlet_alpha']] * self.game.action_size, size=policy.shape[0])
-        
 
         for i, spg in enumerate(self_play_games):
             spg_policy = policy[i]    
@@ -238,19 +236,19 @@ class MCTSParallel:
                 # selection
                 node = spg.root
 
-            # expansion
-            while node.is_fully_expanded():
-                node = node.select()
+                # expansion
+                while node.is_fully_expanded():
+                    node = node.select()
 
-            value, is_terminal = self.game.get_value_and_terminated(
-                node.state, node.action_taken)
-            value = self.game.get_opponent_value(value)
+                value, is_terminal = self.game.get_value_and_terminated(
+                    node.state, node.action_taken)
+                value = self.game.get_opponent_value(value)
 
-            if is_terminal:
-                # backprop
-                node.backpropagate(value)
-            else:
-                spg.node = node
+                if is_terminal:
+                    # backprop
+                    node.backpropagate(value)
+                else:
+                    spg.node = node
 
             expandable_self_play_games = [mapping_idx for mapping_idx in range(len(self_play_games)) if self_play_games[mapping_idx].node is not None]
 
@@ -300,7 +298,6 @@ class AlphaZeroParallel:
             for i in range(len(self_play_games))[::-1]:
                 spg = self_play_games[i]
                 
-
                 # return visit_counts
                 action_probs = np.zeros(self.game.action_size)
                 for child in spg.root.children:
@@ -310,15 +307,8 @@ class AlphaZeroParallel:
                 spg.memory.append((spg.root.state, action_probs, player))
 
                 temperature_action_probs = action_probs ** (1 / self.args['temperature'])
+                temperature_action_probs /= np.sum(temperature_action_probs)
 
-                if np.isnan(temperature_action_probs).any():
-                    exit("YEET")
-                    temperature_action_probs = np.ones_like(temperature_action_probs) / len(temperature_action_probs)
-                else:
-                    temperature_action_probs /= np.sum(temperature_action_probs)
-
-
-                # changed to temp_probs, but video has action_probs
                 action = np.random.choice(self.game.action_size, p=temperature_action_probs)
                 
                 spg.state = self.game.get_next_state(spg.state, action, player)
@@ -336,7 +326,7 @@ class AlphaZeroParallel:
                     del self_play_games[i]
             
             player = self.game.get_opponent(player)
-            return return_memory
+        return return_memory
 
 
     def train(self, memory):
@@ -373,7 +363,7 @@ class AlphaZeroParallel:
                 self.train(memory)
 
             torch.save(self.model.state_dict(), f"weights/model_{i}_{self.game}.pt")
-            torch.save(self.optimizer.state_dict(), f"weights/optimizer_{i}_{self.game}.pt")
+            # torch.save(self.optimizer.state_dict(), f"weights/optimizer_{i}_{self.game}.pt")
 
 
 class SPG: # self play game

@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ResNet(nn.Module):
-    def __init__(self, game, num_resBlocks, num_hidden, device):
+    def __init__(self, game, num_res_blocks, num_hidden, device):
         super(ResNet, self).__init__()
         self.device = device
         self.start_block = nn.Sequential(
@@ -11,7 +11,7 @@ class ResNet(nn.Module):
               nn.ReLU()
          )
         self.backBone = nn.ModuleList(
-            [ResBlock(num_hidden) for _ in range(num_resBlocks)]
+            [ResBlock(num_hidden) for _ in range(num_res_blocks)]
         )
         self.policyHead = nn.Sequential(
             nn.Conv2d(num_hidden, 32, kernel_size=3, padding=1),
