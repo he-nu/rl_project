@@ -9,17 +9,17 @@ from modules.net import ResNet
 # Hyperparameters
 lr = 0.001
 weight_decay = 0.0001
-resnet_blocks = 9
-num_hidden = 128
-num_epochs = 5
-batch_size = 256
+resnet_blocks = 12
+num_hidden = 256
+num_epochs = 20
+batch_size = 512
 
-num_searches = 600
-num_parallel_games = 300
+num_searches = 800
+num_parallel_games = 100
 num_self_play_iterations = 600
-num_iterations = 8
+num_iterations = 15
 
-temperature = 1.25
+temperature = 0.5
 dirichlet_epsilon = 0.25
 dirichlet_alpha = 0.314159265358979
 C = 2

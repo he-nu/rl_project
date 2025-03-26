@@ -361,7 +361,7 @@ class AlphaZeroParallel:
             for eopch in tqdm(range(self.args['num_epochs'])):
                 self.train(memory)
 
-            torch.save(self.model.state_dict(), f"weights/model_{i}_{self.game}.pt")
+            torch.save(self.model.state_dict(), f"weights/model_{i}_{self.game}_run2.pt")
             # torch.save(self.optimizer.state_dict(), f"weights/optimizer_{i}_{self.game}.pt")
 
 
