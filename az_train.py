@@ -12,11 +12,11 @@ weight_decay = 0.0001
 resnet_blocks = 9
 num_hidden = 128
 num_epochs = 5
-batch_size = 128
+batch_size = 256
 
 num_searches = 600
-num_parallel_games = 1_000
-num_self_play_iterations = 500
+num_parallel_games = 300
+num_self_play_iterations = 600
 num_iterations = 8
 
 temperature = 1.25
