@@ -2,7 +2,11 @@
 
 ## TODO
 
-- Documentation
-- Sane requirements
-- License
+- Refactor
+- Document
+
+Add:
+
+- Add sane requirements
+- Add License
 - Links and references
