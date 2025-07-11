@@ -9,7 +9,14 @@ import torch
 
 
 class Node:
-    def __init__(self, game, args, state, parent=None, action_taken=None, prior=0, visit_count=0):
+    def __init__(
+            self, game, args, state,
+            parent=None,
+            action_taken=None,
+            prior=0,
+            visit_count=0
+            ):
+        
         self.game = game
         self.args = args
         self.state = state
@@ -30,14 +37,14 @@ class Node:
         best_ucb = -np.inf
 
         for child in self.children:
-            ucb = self.get_ucb(child)
+            ucb = self.get_upper_confidence_bound(child)
             if ucb > best_ucb:
                 best_child = child
                 best_ucb = ucb
 
         return best_child
     
-    def get_ucb(self, child):
+    def get_upper_confidence_bound(self, child):
         if child.visit_count == 0:
             q_value = 0
         else:
@@ -51,9 +58,23 @@ class Node:
             if prob > 0:
                 child_state = self.state.copy()
                 player = 1
-                child_state = self.game.get_next_state(child_state, action, player=player)
-                child_state = self.game.change_perspective(child_state, player=-player)
-                child = Node(self.game, self.args, child_state, self, action, prob)
+                child_state = self.game.get_next_state(
+                    child_state,
+                    action,
+                    player=player
+                )
+                child_state = self.game.change_perspective(
+                    child_state,
+                    player=-player
+                )
+                child = Node(
+                    self.game,
+                    self.args,
+                    child_state,
+                    self,
+                    action,
+                    prob
+                )
                 self.children.append(child)
 
         return child
@@ -65,7 +86,7 @@ class Node:
         value = self.game.get_opponent_value(value)
         if self.parent is not None:
            self.parent.backpropagate(value)
-
+        return None
 
 class MCTS:
     def __init__(self, game, args, model):
@@ -73,12 +94,16 @@ class MCTS:
         self.args = args
         self.model = model
 
+
     @torch.no_grad()
     def search(self, state):
         root = Node(self.game, self.args, state, visit_count=1)
 
         policy, _ = self.model(
-            torch.tensor(self.game.get_encoded_state(state), device=self.model.device).unsqueeze(0)
+            torch.tensor(
+                self.game.get_encoded_state(state),
+                device=self.model.device
+            ).unsqueeze(0)
         )
         policy = torch.softmax(policy, dim=1).squeeze(0).cpu().numpy()
         policy = (1 - self.args['dirichlet_epsilon']) * policy + self.args['dirichlet_epsilon'] \
@@ -188,6 +213,7 @@ class AlphaZero:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+        return None
 
 
     def learn(self):
@@ -198,11 +224,12 @@ class AlphaZero:
                 memory += self.self_play()
 
             self.model.train()
-            for eopch in tqdm(range(self.args['num_epochs'])):
+            for _ in tqdm(range(self.args['num_epochs'])):
                 self.train(memory)
 
             torch.save(self.model.state_dict(), f"weights/model_{i}_{self.game}.pt")
             torch.save(self.optimizer.state_dict(), f"weights/optimizer_{i}_{self.game}.pt")
+        return None
 
 class MCTSParallel:
     def __init__(self, game, args, model):
@@ -230,7 +257,7 @@ class MCTSParallel:
             spg.root = Node(self.game, self.args, states[i], visit_count=1)
             spg.root.expand(spg_policy)
          
-        for search in range(self.args['num_searches']):
+        for _ in range(self.args['num_searches']):
             for spg in self_play_games:
                 spg.node = None
                 # selection
@@ -272,6 +299,7 @@ class MCTSParallel:
 
                 node.expand(spg_policy)
                 node.backpropagate(spg_value)
+        return None
 
 
 class AlphaZeroParallel:
@@ -316,7 +344,10 @@ class AlphaZeroParallel:
 
                 if is_terminal:
                     for hist_neutral_state, hist_action_probs, hist_player in spg.memory:
-                        hist_outcome = (value if hist_player == player else self.game.get_opponent_value(value))
+                        hist_outcome = (
+                            value if hist_player == player 
+                            else self.game.get_opponent_value(value)
+                            )
                         return_memory.append((
                             self.game.get_encoded_state(hist_neutral_state),
                             hist_action_probs,
@@ -331,13 +362,33 @@ class AlphaZeroParallel:
     def train(self, memory):
         random.shuffle(memory)
         for batch_idx in range(0, len(memory), self.args['batch_size']):
-            sample = memory[batch_idx:min(len(memory) - 1, batch_idx + self.args['batch_size'])]
+            sample = memory[
+                batch_idx:min(
+                    len(memory) - 1,
+                    batch_idx + self.args['batch_size']
+                    )
+                ]
             state, policy_targets, value_targets = zip(*sample)
-            state, policy_targets, value_targets = np.array(state), np.array(policy_targets), np.array(value_targets).reshape(-1, 1)
+            state, policy_targets, value_targets = (
+                np.array(state),
+                np.array(policy_targets),
+                np.array(value_targets).reshape(-1, 1)
+                )
             
-            state = torch.tensor(state, dtype=torch.float32, device=self.model.device)
-            policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
-            value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
+            state = torch.tensor(
+                state,
+                dtype=torch.float32,
+                device=self.model.device)
+            policy_targets = torch.tensor(
+                policy_targets,
+                dtype=torch.float32,
+                device=self.model.device
+                )
+            value_targets = torch.tensor(
+                value_targets,
+                dtype=torch.float32,
+                device=self.model.device
+                )
 
             out_policy, out_value = self.model(state)
             
@@ -348,20 +399,27 @@ class AlphaZeroParallel:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+        return None
 
 
     def learn(self):
         for i in range(self.args['num_iterations']):
             memory = []
             self.model.eval()
-            for self_play_iteration in tqdm(range(self.args['num_self_play_iterations'] // self.args['num_parallel_games'])):
+            for _ in tqdm(range(
+                self.args['num_self_play_iterations'] 
+                // self.args['num_parallel_games']
+                )):
+                
                 memory += self.self_play()
 
             self.model.train()
             for eopch in tqdm(range(self.args['num_epochs'])):
                 self.train(memory)
 
-            torch.save(self.model.state_dict(), f"weights/model_{i}_{self.game}_run2.pt")
+            torch.save(
+                self.model.state_dict(),
+                f"weights/model_{i}_{self.game}_run2.pt")
             # torch.save(self.optimizer.state_dict(), f"weights/optimizer_{i}_{self.game}.pt")
 
 
