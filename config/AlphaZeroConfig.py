@@ -22,6 +22,3 @@ class AlphaZeroConfig:
     dirichlet_epsilon = 0.25
     dirichlet_alpha = 0.314159265358979
     C = 2
-
-    
-
