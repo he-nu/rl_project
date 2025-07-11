@@ -90,7 +90,7 @@ class MCTS:
 
         root.expand(policy)
         
-        for search in range(self.args['num_searches']):
+        for _ in range(self.args['num_searches']):
             # selection
             node = root
 
