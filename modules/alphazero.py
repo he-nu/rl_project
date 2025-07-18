@@ -7,6 +7,8 @@ from tqdm import tqdm
 import numpy as np
 import torch
 
+from utils.WeightSavingManager import WeightSavingManager
+
 
 class Node:
     def __init__(
@@ -403,7 +405,11 @@ class AlphaZeroParallel:
 
 
     def learn(self):
+        weight_namer = WeightSavingManager(
+            game=self.game,
+        )
         for i in range(self.args['num_iterations']):
+            weight_namer.model_nro = i
             memory = []
             self.model.eval()
             for _ in tqdm(range(
@@ -417,6 +423,8 @@ class AlphaZeroParallel:
             for eopch in tqdm(range(self.args['num_epochs'])):
                 self.train(memory)
 
+
+            save_name = weight_namer.make_save_name()
             torch.save(
                 self.model.state_dict(),
                 f"weights/model_{i}_{self.game}_run2.pt")
