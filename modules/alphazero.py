@@ -106,8 +106,15 @@ class MCTS:
             ).unsqueeze(0)
         )
         policy = torch.softmax(policy, dim=1).squeeze(0).cpu().numpy()
-        policy = (1 - self.args['dirichlet_epsilon']) * policy + self.args['dirichlet_epsilon'] \
-            * np.random.dirichlet([self.args['dirichlet_alpha']] * self.game.action_size)
+        policy = (
+            (1 - self.args['dirichlet_epsilon'])
+            * policy 
+            + self.args['dirichlet_epsilon']
+            * np.random.dirichlet(
+                [self.args['dirichlet_alpha']]
+                * self.game.action_size
+                )
+            )
         
         valid_moves = self.game.get_valid_moves(state)
         policy *= valid_moves
@@ -129,7 +136,9 @@ class MCTS:
 
             if not is_terminal:
                 policy, value = self.model(
-                    torch.tensor(self.game.get_encoded_state(node.state), device=self.model.device).unsqueeze(0)
+                    torch.tensor(
+                        self.game.get_encoded_state(node.state),
+                        device=self.model.device).unsqueeze(0)
                 )
                 policy = torch.softmax(policy, dim=1).squeeze(0).cpu().numpy()
                 valid_moves = self.game.get_valid_moves(node.state)
@@ -175,15 +184,24 @@ class AlphaZero:
             temperature_action_probs /= np.sum(temperature_action_probs)
 
             # changed to temp_probs, but video has action_probs
-            action = np.random.choice(self.game.action_size, p=temperature_action_probs)
+            action = np.random.choice(
+                self.game.action_size,
+                p=temperature_action_probs
+                )
             state = self.game.get_next_state(state, action, player)
 
-            value, is_terminal = self.game.get_value_and_terminated(state, action)
+            value, is_terminal = self.game.get_value_and_terminated(
+                state, action
+                )
 
             if is_terminal:
                 return_memory = []
                 for hist_neutral_state, hist_action_probs, hist_player in memory:
-                    hist_outcome = (value if hist_player == player else self.game.get_opponent_value(value))
+                    hist_outcome = (
+                        value 
+                        if hist_player == player 
+                        else self.game.get_opponent_value(value)
+                        )
                     return_memory.append((
                         self.game.get_encoded_state(hist_neutral_state),
                         hist_action_probs,
@@ -196,13 +214,34 @@ class AlphaZero:
     def train(self, memory):
         random.shuffle(memory)
         for batch_idx in range(0, len(memory), self.args['batch_size']):
-            sample = memory[batch_idx:min(len(memory) - 1, batch_idx + self.args['batch_size'])]
+            sample_upper_bound = min(
+                len(memory) - 1, batch_idx + self.args['batch_size']
+                )
+            sample = memory[
+                batch_idx:sample_upper_bound
+                ]
             state, policy_targets, value_targets = zip(*sample)
-            state, policy_targets, value_targets = np.array(state), np.array(policy_targets), np.array(value_targets).reshape(-1, 1)
+            state, policy_targets, value_targets = (
+                np.array(state),
+                np.array(policy_targets),
+                np.array(value_targets).reshape(-1, 1)
+                )
             
-            state = torch.tensor(state, dtype=torch.float32, device=self.model.device)
-            policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
-            value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
+            state = torch.tensor(
+                state,
+                dtype=torch.float32,
+                device=self.model.device
+                )
+            policy_targets = torch.tensor(
+                policy_targets,
+                dtype=torch.float32, 
+                device=self.model.device
+                )
+            value_targets = torch.tensor(
+                value_targets,
+                dtype=torch.float32,
+                device=self.model.device
+                )
 
             out_policy, out_value = self.model(state)
             
@@ -220,7 +259,9 @@ class AlphaZero:
         for i in range(self.args['num_iterations']):
             memory = []
             self.model.eval()
-            for self_play_iteration in tqdm(range(self.args['num_self_play_iterations'])):
+            for _ in tqdm(range(
+                self.args['num_self_play_iterations']
+                )):
                 memory += self.self_play()
 
             self.model.train()
